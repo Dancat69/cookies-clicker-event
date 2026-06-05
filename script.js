@@ -110,7 +110,7 @@ function buyUpgrade(upgrade, counterEl) {
     // Add image to farms for every upgrade
     addFarmImage(upgrade);
 
-    upgrade.price = Math.ceil(upgrade.price * 1.15);
+    upgrade.price = Math.ceil(upgrade.price * 1.69);
     counterEl.textContent = "x" + upgrade.count;
     counterEl.closest(".upgrade").querySelector(".upgrade_price").textContent = upgrade.price + "$";
 
