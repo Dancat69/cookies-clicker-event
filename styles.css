@@ -4,6 +4,17 @@
     font-family: 'Arial';
 }
 
+h1 {
+    font-weight: 800;
+    text-transform: uppercase;
+    text-shadow: #535353 2px 1px 5px;
+}
+
+.textCount {
+    font-weight: 800;
+    font-size: 50px;
+}
+
 .app {
     display: flex;
     align-items: center;
@@ -25,11 +36,16 @@
 }
 
 .counter_text {
-    font-size: 24px;
+    font-weight: 500;
+    font-size: 50px;
 }
 
 .rate_text {
-    font-size: 14px;
+    font-size: 12.5px;
+    color: #000000a2;
+    text-align: center;
+    font-weight: 400;
+
 }
 
 .cookie_container {
@@ -84,6 +100,15 @@
     transition: transform 0.5s ease;
 }
 
+.cookie_container.spinning .orbit_hand {
+    animation: orbit_spin 0.5s linear infinite;
+}
+
+@keyframes orbit_spin {
+    from { --angle: 0deg; }
+    to { --angle: 360deg; }
+}
+
 /* Farms section in the middle */
 .farms_section {
     flex: 2;
@@ -99,7 +124,7 @@
     flex-direction: row;
     flex-wrap: wrap;
     gap: 8px;
-    background-color: rgba(0, 0, 0, 0.466);
+    background-color: rgba(0, 0, 0, 0.212);
     border-radius: 10px;
     padding: 10px;
     min-height: 80px;
@@ -123,7 +148,7 @@
     display: flex;
     flex-direction: row;
     gap: 10px;
-    background-color: rgba(0, 0, 0, 0.377);
+    background-color: rgba(0, 0, 0, 0.212);
     color: white;
     padding: 10px;
     border-radius: 10px;
