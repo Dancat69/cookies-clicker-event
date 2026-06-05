@@ -1,6 +1,6 @@
 :root {
-    background-color: black;
-    color: white;
+    background-color: white;
+    color: black;
     font-family: 'Arial';
 }
 
@@ -46,7 +46,7 @@
     width: 300px;
     height: 300px;
     background-color: transparent;
-    background-image: url("res/cookie.png");
+    background-image: url("res/coin.png");
     background-position: center;
     background-size: cover;
     border: none;
@@ -99,7 +99,7 @@
     flex-direction: row;
     flex-wrap: wrap;
     gap: 8px;
-    background-color: #111;
+    background-color: rgba(0, 0, 0, 0.466);
     border-radius: 10px;
     padding: 10px;
     min-height: 80px;
@@ -123,14 +123,15 @@
     display: flex;
     flex-direction: row;
     gap: 10px;
-    background-color: black;
+    background-color: rgba(0, 0, 0, 0.377);
+    color: white;
     padding: 10px;
     border-radius: 10px;
     user-select: none;
 }
 
 .upgrade:hover {
-    background-color: #121212;
+    background-color: rgba(0, 0, 0, 0.315);
 }
 
 .upgrade:active {
@@ -172,4 +173,19 @@
 .upgrade_counter {
     align-self: center;
     font-size: 20px;
+}
+
+#rain_canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.app {
+    position: relative;
+    z-index: 1;
 }

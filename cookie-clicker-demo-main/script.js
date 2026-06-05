@@ -11,7 +11,7 @@ class Upgrade {
 
 const upgrades = [
     new Upgrade("clicker", "Clicker", "Multiplies cookies per click", "res/upgrade_icons/clicker.png", 15, 0),
-    new Upgrade("worm", "Wrinkler", "Scary worm does cool stuff", "res/upgrade_icons/wrinkler.png", 100, 0),
+    new Upgrade("flower", "VictorFlower", "Nice flower does cool stuff", "res/upgrade_icons/flower.png", 25, 0)
 ];
 
 const cookieButton = document.getElementById("cookie_button");
@@ -102,9 +102,10 @@ function buyUpgrade(upgrade, counterEl) {
         addHandAroundCookie();
     }
 
-    if (upgrade.name === "worm") {
+    if (upgrade.name === "flower") {
         cookiesPerSecond++;
     }
+
 
     // Add image to farms for every upgrade
     addFarmImage(upgrade);
@@ -144,3 +145,53 @@ for (const upgrade of upgrades) {
 
     upgradesWindow.appendChild(el);
 }
+
+// Rain effect
+const canvas = document.getElementById("rain_canvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+const rainImage = new Image();
+rainImage.src = "res/cookie.png"; // Change this to your image path
+
+const drops = Array.from({ length: 60 }, () => ({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    speed: 2 + Math.random() * 4,
+    size: 20 + Math.random() * 30,
+    opacity: 0.4 + Math.random() * 0.6,
+    wobble: Math.random() * Math.PI * 2,
+}));
+
+function drawRain() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drops.forEach(drop => {
+        ctx.save();
+        ctx.globalAlpha = drop.opacity;
+        ctx.drawImage(rainImage, drop.x, drop.y, drop.size, drop.size);
+        ctx.restore();
+
+        // Move drop down with a slight wobble
+        drop.y += drop.speed;
+        drop.x += Math.sin(drop.wobble) * 0.5;
+        drop.wobble += 0.02;
+
+        // Reset to top when it goes off screen
+        if (drop.y > canvas.height) {
+            drop.y = -drop.size;
+            drop.x = Math.random() * canvas.width;
+        }
+    });
+
+    requestAnimationFrame(drawRain);
+}
+
+rainImage.onload = () => drawRain();
