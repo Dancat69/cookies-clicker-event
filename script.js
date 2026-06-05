@@ -27,8 +27,8 @@ let clickMultiplier = 1;
 const farmCounts = {};
 
 function updateUI() {
-    counterText.textContent = cookieCount + " Cookie(s)";
-    rateText.textContent = cookiesPerSecond + " cookie(s) per second | " + clickMultiplier + " cookie(s) per click";
+    counterText.textContent = cookieCount + " Victor(s)";
+    rateText.textContent = cookiesPerSecond + " victor(s) per second | " + clickMultiplier + " victor(s) per click";
 }
 
 updateUI();
