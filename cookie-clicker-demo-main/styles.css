@@ -1,0 +1,175 @@
+:root {
+    background-color: black;
+    color: white;
+    font-family: 'Arial';
+}
+
+.app {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.game {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.cookie_window {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    margin-top: 200px;
+    flex: 1;
+}
+
+.counter_text {
+    font-size: 24px;
+}
+
+.rate_text {
+    font-size: 14px;
+}
+
+.cookie_container {
+    width: 350px;
+    height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+    position: relative;
+}
+
+.cookie_button {
+    width: 300px;
+    height: 300px;
+    background-color: transparent;
+    background-image: url("res/cookie.png");
+    background-position: center;
+    background-size: cover;
+    border: none;
+    transition: width 0.1s, height 0.1s;
+    position: relative;
+    z-index: 1;
+}
+
+.cookie_button:hover {
+    width: 310px;
+    height: 310px;
+}
+
+.cookie_button:active {
+    width: 350px;
+    height: 350px;
+}
+
+/* Orbiting hands around the cookie */
+.orbit_hand {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    object-fit: contain;
+    transform:
+        rotate(var(--angle))
+        translateX(160px)
+        rotate(calc(-1 * var(--angle)));
+    transform-origin: 0 0;
+    margin-top: -20px;
+    margin-left: -20px;
+    z-index: 2;
+    transition: transform 0.5s ease;
+}
+
+/* Farms section in the middle */
+.farms_section {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.farm_panel {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    background-color: #111;
+    border-radius: 10px;
+    padding: 10px;
+    min-height: 80px;
+}
+
+.farm_img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+}
+
+/* Upgrades */
+.upgrades_window {
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.upgrade {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    background-color: black;
+    padding: 10px;
+    border-radius: 10px;
+    user-select: none;
+}
+
+.upgrade:hover {
+    background-color: #121212;
+}
+
+.upgrade:active {
+    background-color: #2a2a2a;
+}
+
+.upgrade_icon_container {
+    width: 100px;
+    height: 100px;
+    position: relative;
+}
+
+.upgrade_icon {
+    width: 100%;
+    height: 100%;
+}
+
+.upgrade_price {
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+}
+
+.upgrade_body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.upgrade_title {
+    font-size: 18px;
+}
+
+.upgrade_description {
+    font-size: 14px;
+}
+
+.upgrade_counter {
+    align-self: center;
+    font-size: 20px;
+}
