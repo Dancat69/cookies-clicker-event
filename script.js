@@ -52,22 +52,23 @@ function create(htmlStr) {
 }
 
 // Adds a hand image orbiting the cookie
-function addHandAroundCookie() {
-    const totalHands = cookieContainer.querySelectorAll(".orbit_hand").length;
-    const angle = (totalHands * 360) / (totalHands + 1);
+function addFarmImage(upgrade) {
+    if (upgrade.name === "clicker") return; // Don't show clicker in farms
 
-    // Re-distribute all hands evenly
-    const hands = cookieContainer.querySelectorAll(".orbit_hand");
-    hands.forEach((hand, i) => {
-        const newAngle = (i * 360) / (totalHands + 1);
-        hand.style.setProperty("--angle", newAngle + "deg");
-    });
+    const farmsSection = document.getElementById("farms_section");
+    let panel = document.getElementById("farm_panel_" + upgrade.name);
 
-    const hand = document.createElement("img");
-    hand.src = "res/upgrade_icons/clicker.png";
-    hand.classList.add("orbit_hand");
-    hand.style.setProperty("--angle", angle + "deg");
-    cookieContainer.appendChild(hand);
+    if (!panel) {
+        panel = document.createElement("div");
+        panel.classList.add("farm_panel");
+        panel.id = "farm_panel_" + upgrade.name;
+        farmsSection.appendChild(panel);
+    }
+
+    const img = document.createElement("img");
+    img.src = upgrade.iconUrl;
+    img.classList.add("farm_img");
+    panel.appendChild(img);
 }
 
 // Adds or updates a farm panel for the given upgrade
