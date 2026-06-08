@@ -226,3 +226,63 @@ function buyUpgrade(upgrade, counterEl) {
 
     updateUI();
 }
+
+// --- Custom coin face: upload your own photo as the coin ---
+const COIN_FACE_KEY = "siwatko_coin_face"; // isolated key — independent of game-state saving
+const COIN_FACE_SIZE = 256;                // square px — keeps the coin crisp and localStorage small
+const coinUploadInput = document.getElementById("coin_upload_input");
+const coinResetButton = document.getElementById("coin_reset");
+
+function applyCoinFace(dataUrl) {
+    cookieButton.style.backgroundImage = `url("${dataUrl}")`;
+    cookieButton.classList.add("custom_face");
+    coinResetButton.hidden = false;
+}
+
+function resetCoinFace() {
+    cookieButton.style.backgroundImage = ""; // drop inline style → falls back to res/coin.png
+    cookieButton.classList.remove("custom_face");
+    coinResetButton.hidden = true;
+    localStorage.removeItem(COIN_FACE_KEY);
+}
+
+// Center-crop to a square and downscale, so any photo becomes a clean, round coin
+function cropToCoin(image) {
+    const side = Math.min(image.width, image.height);
+    const sx = (image.width - side) / 2;
+    const sy = (image.height - side) / 2;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = COIN_FACE_SIZE;
+    canvas.getContext("2d").drawImage(image, sx, sy, side, side, 0, 0, COIN_FACE_SIZE, COIN_FACE_SIZE);
+
+    return canvas.toDataURL("image/webp", 0.9); // falls back to PNG if webp unsupported
+}
+
+coinUploadInput.addEventListener("change", () => {
+    const file = coinUploadInput.files[0];
+    if (!file || !file.type.startsWith("image/")) return;
+
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+        const dataUrl = cropToCoin(image);
+        URL.revokeObjectURL(objectUrl);
+        applyCoinFace(dataUrl);
+        try {
+            localStorage.setItem(COIN_FACE_KEY, dataUrl);
+        } catch (e) {
+            console.warn("Could not save coin face (storage full?):", e);
+        }
+    };
+    image.onerror = () => URL.revokeObjectURL(objectUrl);
+    image.src = objectUrl;
+
+    coinUploadInput.value = ""; // allow re-uploading the same file
+});
+
+coinResetButton.addEventListener("click", resetCoinFace);
+
+// Restore a previously uploaded coin on load
+const savedCoinFace = localStorage.getItem(COIN_FACE_KEY);
+if (savedCoinFace) applyCoinFace(savedCoinFace);

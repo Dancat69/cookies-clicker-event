@@ -214,3 +214,41 @@ h1 {
     position: relative;
     z-index: 1;
 }
+
+/* Custom uploaded coin face — the photo is set inline via JS;
+   we only round it so any rectangular photo reads as a coin.
+   Size/position are inherited from the base .cookie_button rule. */
+.cookie_button.custom_face {
+    border-radius: 50%;
+}
+
+.coin_controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.coin_upload {
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.212);
+    color: white;
+    user-select: none;
+}
+
+.coin_upload:hover {
+    background-color: rgba(0, 0, 0, 0.315);
+}
+
+.coin_reset {
+    cursor: pointer;
+    font-size: 13px;
+    border: none;
+    background: transparent;
+    color: #000000a2;
+    text-decoration: underline;
+}
