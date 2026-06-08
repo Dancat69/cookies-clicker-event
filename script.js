@@ -22,9 +22,7 @@ const cookieContainer = document.querySelector(".cookie_container");
 let cookieCount = 0;
 let cookiesPerSecond = 0;
 let clickMultiplier = 1;
-
-// Tracks how many farm images each upgrade has spawned
-const farmCounts = {};
+let spinTimeout = null;
 
 function updateUI() {
     counterText.textContent = cookieCount + " Victor(s)";
@@ -36,6 +34,13 @@ updateUI();
 cookieButton.addEventListener("click", () => {
     cookieCount += clickMultiplier;
     updateUI();
+
+    // Spin animation on click
+    cookieContainer.classList.add("spinning");
+    if (spinTimeout) clearTimeout(spinTimeout);
+    spinTimeout = setTimeout(() => {
+        cookieContainer.classList.remove("spinning");
+    }, 600);
 });
 
 setInterval(() => {
@@ -51,40 +56,38 @@ function create(htmlStr) {
     return temp.firstElementChild;
 }
 
-// Adds a hand image orbiting the cookie
-function addFarmImage(upgrade) {
-    if (upgrade.name === "clicker") return; // Don't show clicker in farms
+function addHandAroundCookie() {
+    const hands = cookieContainer.querySelectorAll(".orbit_hand");
+    const totalHands = hands.length;
+    const newTotal = totalHands + 1;
 
-    const farmsSection = document.getElementById("farms_section");
-    let panel = document.getElementById("farm_panel_" + upgrade.name);
+    // Re-distribute existing hands evenly
+    hands.forEach((hand, i) => {
+        const newAngle = (i * 360) / newTotal;
+        hand.style.setProperty("--angle", newAngle + "deg");
+    });
 
-    if (!panel) {
-        panel = document.createElement("div");
-        panel.classList.add("farm_panel");
-        panel.id = "farm_panel_" + upgrade.name;
-        farmsSection.appendChild(panel);
-    }
-
-    const img = document.createElement("img");
-    img.src = upgrade.iconUrl;
-    img.classList.add("farm_img");
-    panel.appendChild(img);
+    // Add new hand
+    const hand = document.createElement("img");
+    hand.src = "res/upgrade_icons/clicker.png";
+    hand.classList.add("orbit_hand");
+    hand.style.setProperty("--angle", ((totalHands * 360) / newTotal) + "deg");
+    cookieContainer.appendChild(hand);
 }
 
-// Adds or updates a farm panel for the given upgrade
 function addFarmImage(upgrade) {
+    if (upgrade.name === "clicker") return; // Clicker only shows around the cookie
+
     const farmsSection = document.getElementById("farms_section");
     let panel = document.getElementById("farm_panel_" + upgrade.name);
 
     if (!panel) {
-        // Create a new panel for this upgrade
         panel = document.createElement("div");
         panel.classList.add("farm_panel");
         panel.id = "farm_panel_" + upgrade.name;
         farmsSection.appendChild(panel);
     }
 
-    // Add one more image to the panel
     const img = document.createElement("img");
     img.src = upgrade.iconUrl;
     img.classList.add("farm_img");
@@ -107,8 +110,6 @@ function buyUpgrade(upgrade, counterEl) {
         cookiesPerSecond++;
     }
 
-
-    // Add image to farms for every upgrade
     addFarmImage(upgrade);
 
     upgrade.price = Math.ceil(upgrade.price * 1.55);
@@ -160,7 +161,7 @@ window.addEventListener("resize", () => {
 });
 
 const rainImage = new Image();
-rainImage.src = "res/cookie.png"; // Change this to your image path
+rainImage.src = "res/cookie.png";
 
 const drops = Array.from({ length: 60 }, () => ({
     x: Math.random() * window.innerWidth,
@@ -180,12 +181,10 @@ function drawRain() {
         ctx.drawImage(rainImage, drop.x, drop.y, drop.size, drop.size);
         ctx.restore();
 
-        // Move drop down with a slight wobble
         drop.y += drop.speed;
         drop.x += Math.sin(drop.wobble) * 0.5;
         drop.wobble += 0.02;
 
-        // Reset to top when it goes off screen
         if (drop.y > canvas.height) {
             drop.y = -drop.size;
             drop.x = Math.random() * canvas.width;
