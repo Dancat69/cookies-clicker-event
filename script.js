@@ -227,11 +227,17 @@ function buyUpgrade(upgrade, counterEl) {
     updateUI();
 }
 
-// --- Custom coin face: upload your own photo as the coin ---
-const COIN_FACE_KEY = "siwatko_coin_face"; // isolated key — independent of game-state saving
-const COIN_FACE_SIZE = 256;                // square px — keeps the coin crisp and localStorage small
-const coinUploadInput = document.getElementById("coin_upload_input");
-const coinResetButton = document.getElementById("coin_reset");
+// --- Custom coin face: re-mint the Victor coin with your uploaded photo ---
+const COIN_FACE_KEY    = "siwatko_coin_face"; // isolated key — independent of game-state saving
+const COIN_FACE_SIZE   = 512;                 // output px (coin art is square); crisp but small
+const COIN_FACE_RADIUS = 0.34;                // inner face circle as a fraction of size
+const COIN_FACE_OPAQUE = 0.90;                // face stays solid out to this fraction of the radius, then feathers
+const coinUploadInput  = document.getElementById("coin_upload_input");
+const coinResetButton  = document.getElementById("coin_reset");
+
+// The Victor coin art, reused as the rim + backing for custom faces.
+const coinFrame = new Image();
+coinFrame.src = "res/coin.png";
 
 function applyCoinFace(dataUrl) {
     cookieButton.style.backgroundImage = `url("${dataUrl}")`;
@@ -246,17 +252,61 @@ function resetCoinFace() {
     localStorage.removeItem(COIN_FACE_KEY);
 }
 
-// Center-crop to a square and downscale, so any photo becomes a clean, round coin
-function cropToCoin(image) {
+// Re-mint the coin: draw the Victor coin, then drop the user's photo into the
+// inner circle with a gold wash + feathered edge, so it reads as part of the coin.
+function buildCoinFace(image) {
+    const S = COIN_FACE_SIZE;
+    const cx = S / 2, cy = S / 2;
+    const r = S * COIN_FACE_RADIUS;            // inner face radius
+    const box = r * 2;
+
+    // Square-crop the source so the face isn't distorted.
     const side = Math.min(image.width, image.height);
     const sx = (image.width - side) / 2;
     const sy = (image.height - side) / 2;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = COIN_FACE_SIZE;
-    canvas.getContext("2d").drawImage(image, sx, sy, side, side, 0, 0, COIN_FACE_SIZE, COIN_FACE_SIZE);
+    // 1) Build the gold-filtered, feathered face on a scratch canvas.
+    const face = document.createElement("canvas");
+    face.width = face.height = S;
+    const f = face.getContext("2d");
 
-    return canvas.toDataURL("image/webp", 0.9); // falls back to PNG if webp unsupported
+    f.drawImage(image, sx, sy, side, side, cx - r, cy - r, box, box);
+
+    // Gold wash — keeps facial detail but tints it like minted gold.
+    f.globalCompositeOperation = "overlay";
+    f.globalAlpha = 0.5;
+    f.fillStyle = "#f4c20d";
+    f.fillRect(cx - r, cy - r, box, box);
+
+    f.globalCompositeOperation = "soft-light";
+    f.globalAlpha = 0.4;
+    f.fillRect(cx - r, cy - r, box, box);
+
+    // Outer bevel shadow so the face sinks into the coin instead of sitting flat.
+    f.globalCompositeOperation = "source-over";
+    f.globalAlpha = 1;
+    const bevel = f.createRadialGradient(cx, cy, r * 0.6, cx, cy, r);
+    bevel.addColorStop(0, "rgba(80,48,0,0)");
+    bevel.addColorStop(1, "rgba(60,35,0,0.5)");
+    f.fillStyle = bevel;
+    f.fillRect(cx - r, cy - r, box, box);
+
+    // Feather the edge to a circle so there's no hard seam against the rim.
+    f.globalCompositeOperation = "destination-in";
+    const mask = f.createRadialGradient(cx, cy, r * COIN_FACE_OPAQUE, cx, cy, r);
+    mask.addColorStop(0, "rgba(0,0,0,1)");
+    mask.addColorStop(1, "rgba(0,0,0,0)");
+    f.fillStyle = mask;
+    f.fillRect(0, 0, S, S);
+
+    // 2) Compose: Victor coin (rim + backing) under the freshly minted face.
+    const out = document.createElement("canvas");
+    out.width = out.height = S;
+    const o = out.getContext("2d");
+    o.drawImage(coinFrame, 0, 0, S, S);
+    o.drawImage(face, 0, 0);
+
+    return out.toDataURL("image/webp", 0.92); // falls back to PNG if webp unsupported
 }
 
 coinUploadInput.addEventListener("change", () => {
@@ -266,14 +316,19 @@ coinUploadInput.addEventListener("change", () => {
     const objectUrl = URL.createObjectURL(file);
     const image = new Image();
     image.onload = () => {
-        const dataUrl = cropToCoin(image);
-        URL.revokeObjectURL(objectUrl);
-        applyCoinFace(dataUrl);
-        try {
-            localStorage.setItem(COIN_FACE_KEY, dataUrl);
-        } catch (e) {
-            console.warn("Could not save coin face (storage full?):", e);
-        }
+        const finish = () => {
+            const dataUrl = buildCoinFace(image);
+            URL.revokeObjectURL(objectUrl);
+            applyCoinFace(dataUrl);
+            try {
+                localStorage.setItem(COIN_FACE_KEY, dataUrl);
+            } catch (e) {
+                console.warn("Could not save coin face (storage full?):", e);
+            }
+        };
+        // The coin art must be decoded before we can composite onto it.
+        if (coinFrame.complete && coinFrame.naturalWidth) finish();
+        else coinFrame.addEventListener("load", finish, { once: true });
     };
     image.onerror = () => URL.revokeObjectURL(objectUrl);
     image.src = objectUrl;
