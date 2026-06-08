@@ -11,7 +11,8 @@ class Upgrade {
 
 const upgrades = [
     new Upgrade("clicker", "Clicker", "Multiplies cookies per click", "res/upgrade_icons/clicker.png", 15, 0),
-    new Upgrade("flower", "VictorFlower", "Nice flower does cool stuff", "res/upgrade_icons/flower.png", 25, 0)
+    new Upgrade("flower", "VictorFlower", "Nice flower does cool stuff", "res/upgrade_icons/flower.png", 45, 0),
+    new Upgrade("kid", "VictorKid", "Clicks 4x automatically but weakens your click by 1", "res/upgrade_icons/kid-victor.png", 125, 0)
 ];
 
 const cookieButton = document.getElementById("cookie_button");
@@ -35,12 +36,6 @@ cookieButton.addEventListener("click", () => {
     cookieCount += clickMultiplier;
     updateUI();
 
-    // Spin animation on click
-    cookieContainer.classList.add("spinning");
-    if (spinTimeout) clearTimeout(spinTimeout);
-    spinTimeout = setTimeout(() => {
-        cookieContainer.classList.remove("spinning");
-    }, 600);
 });
 
 setInterval(() => {
@@ -195,3 +190,39 @@ function drawRain() {
 }
 
 rainImage.onload = () => drawRain();
+
+function buyUpgrade(upgrade, counterEl) {
+    console.log("buying", upgrade.name, "| cookies:", cookieCount, "| price:", upgrade.price);
+    if (cookieCount < upgrade.price) return;
+
+    cookieCount -= upgrade.price;
+    upgrade.count++;
+
+    if (upgrade.name === "clicker") {
+        clickMultiplier++;
+        addHandAroundCookie();
+    }
+
+    if (upgrade.name === "flower") {
+        cookiesPerSecond++;
+    }
+
+    if (upgrade.name === "kid") {
+        // Drawback: lower click multiplier by 1 (minimum 1)
+        if (clickMultiplier > 1) clickMultiplier--;
+
+        // Bonus: auto-clicks 4x per second
+        setInterval(() => {
+            cookieCount += 4;
+            updateUI();
+        }, 1000);
+    }
+
+    addFarmImage(upgrade);
+
+    upgrade.price = Math.ceil(upgrade.price * 1.55);
+    counterEl.textContent = "x" + upgrade.count;
+    counterEl.closest(".upgrade").querySelector(".upgrade_price").textContent = upgrade.price + "$";
+
+    updateUI();
+}
