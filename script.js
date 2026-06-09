@@ -229,10 +229,9 @@ function buyUpgrade(upgrade, counterEl) {
 
 // --- Custom coin face: re-mint the Victor coin with your uploaded photo ---
 const COIN_FACE_KEY    = "siwatko_coin_face"; // isolated key — independent of game-state saving
-const COIN_FACE_SIZE    = 512;                // output px (coin art is square); crisp but small
-const COIN_FACE_RADIUS  = 0.27;               // visible face circle as a fraction of size (smaller → coin dominates more)
-const COIN_BACKING_RADIUS = 0.325;            // gold inlay that hides the original face and haloes ours (rim starts ~0.32)
-const COIN_FACE_OPAQUE  = 0.88;               // face stays solid out to this fraction of the radius, then feathers
+const COIN_FACE_SIZE   = 512;                 // output px (coin art is square); crisp but small
+const COIN_FACE_RADIUS = 0.34;                // inner face circle as a fraction of size
+const COIN_FACE_OPAQUE = 0.90;                // face stays solid out to this fraction of the radius, then feathers
 const coinUploadInput  = document.getElementById("coin_upload_input");
 const coinResetButton  = document.getElementById("coin_reset");
 
@@ -253,75 +252,45 @@ function resetCoinFace() {
     localStorage.removeItem(COIN_FACE_KEY);
 }
 
-// Re-mint the coin, letting the Victor coin dominate: cover the original face
-// with a gold inlay (hides it + gives a gold halo), then drop a smaller
-// gold-washed, feathered photo into the centre — all under the coin's rim art.
+// Re-mint the coin: drop the photo into the inner circle with a GRADIENT gold
+// wash — light in the centre (face stays readable), stronger toward the edges
+// so it melts into the coin's gold rim — then layer it under the coin art.
 function buildCoinFace(image) {
     const S = COIN_FACE_SIZE;
     const cx = S / 2, cy = S / 2;
-    const r = S * COIN_FACE_RADIUS;            // visible face radius
-    const backR = S * COIN_BACKING_RADIUS;     // gold inlay radius
+    const r = S * COIN_FACE_RADIUS;            // inner face radius
     const box = r * 2;
 
-    const out = document.createElement("canvas");
-    out.width = out.height = S;
-    const o = out.getContext("2d");
-
-    // 1) Base coin art (rim + backing).
-    o.drawImage(coinFrame, 0, 0, S, S);
-
-    // 2) Gold inlay over the original face, so our smaller face is haloed by coin gold.
-    const inlay = document.createElement("canvas");
-    inlay.width = inlay.height = S;
-    const il = inlay.getContext("2d");
-    const gold = il.createRadialGradient(cx, cy, backR * 0.2, cx, cy, backR);
-    gold.addColorStop(0, "#f6c83f");
-    gold.addColorStop(0.7, "#f7c62a");
-    gold.addColorStop(1, "#ffce18");
-    il.fillStyle = gold;
-    il.beginPath();
-    il.arc(cx, cy, backR, 0, Math.PI * 2);
-    il.fill();
-    // Feather the inlay's outer edge into the coin's rim.
-    il.globalCompositeOperation = "destination-in";
-    const inlayMask = il.createRadialGradient(cx, cy, backR * 0.9, cx, cy, backR);
-    inlayMask.addColorStop(0, "rgba(0,0,0,1)");
-    inlayMask.addColorStop(1, "rgba(0,0,0,0)");
-    il.fillStyle = inlayMask;
-    il.fillRect(0, 0, S, S);
-    o.drawImage(inlay, 0, 0);
-
-    // 3) The gold-washed, feathered photo (smaller; sits inside the gold inlay).
+    // Square-crop the source so the face isn't distorted.
     const side = Math.min(image.width, image.height);
     const sx = (image.width - side) / 2;
     const sy = (image.height - side) / 2;
 
+    // 1) Build the gold-filtered, feathered face on a scratch canvas.
     const face = document.createElement("canvas");
     face.width = face.height = S;
     const f = face.getContext("2d");
 
     f.drawImage(image, sx, sy, side, side, cx - r, cy - r, box, box);
 
-    // Gold wash — keeps facial detail but tints it like minted gold.
-    f.globalCompositeOperation = "overlay";
-    f.globalAlpha = 0.5;
+    // Subtle uniform sheen so the whole face reads as minted metal.
+    f.globalCompositeOperation = "soft-light";
+    f.globalAlpha = 0.35;
     f.fillStyle = "#f4c20d";
     f.fillRect(cx - r, cy - r, box, box);
 
-    f.globalCompositeOperation = "soft-light";
-    f.globalAlpha = 0.4;
-    f.fillRect(cx - r, cy - r, box, box);
-
-    // Outer bevel shadow so the face sinks into the coin instead of sitting flat.
+    // Gradient gold tint — barely there in the centre, strong at the edges.
     f.globalCompositeOperation = "source-over";
     f.globalAlpha = 1;
-    const bevel = f.createRadialGradient(cx, cy, r * 0.6, cx, cy, r);
-    bevel.addColorStop(0, "rgba(80,48,0,0)");
-    bevel.addColorStop(1, "rgba(60,35,0,0.5)");
-    f.fillStyle = bevel;
+    const wash = f.createRadialGradient(cx, cy, r * 0.25, cx, cy, r);
+    wash.addColorStop(0,    "rgba(244,194,13,0.04)");
+    wash.addColorStop(0.55, "rgba(244,194,13,0.34)");
+    wash.addColorStop(0.85, "rgba(247,198,30,0.72)");
+    wash.addColorStop(1,    "rgba(250,202,20,0.95)");
+    f.fillStyle = wash;
     f.fillRect(cx - r, cy - r, box, box);
 
-    // Feather the edge to a circle so it blends into the gold halo.
+    // Feather the edge to a circle so there's no hard seam against the rim.
     f.globalCompositeOperation = "destination-in";
     const mask = f.createRadialGradient(cx, cy, r * COIN_FACE_OPAQUE, cx, cy, r);
     mask.addColorStop(0, "rgba(0,0,0,1)");
@@ -329,6 +298,11 @@ function buildCoinFace(image) {
     f.fillStyle = mask;
     f.fillRect(0, 0, S, S);
 
+    // 2) Compose: Victor coin (rim + backing) under the freshly minted face.
+    const out = document.createElement("canvas");
+    out.width = out.height = S;
+    const o = out.getContext("2d");
+    o.drawImage(coinFrame, 0, 0, S, S);
     o.drawImage(face, 0, 0);
 
     return out.toDataURL("image/webp", 0.92); // falls back to PNG if webp unsupported
