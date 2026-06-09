@@ -24,11 +24,25 @@ const cookieButton = document.getElementById("cookie_button");
 const counterText = document.getElementById("counter_text");
 const rateText = document.querySelector(".rate_text");
 const cookieContainer = document.querySelector(".cookie_container");
+const rebirthButton = document.getElementById("rebirth_button");
+const rebirthText = document.getElementById("rebirth_text");
 
 let cookieCount = 0;
 let cookiesPerSecond = 0;
 let clickMultiplier = 1;
 let totalClicks = 0;
+
+let rebirths = 0;
+
+const REBIRTH_BASE_COST = 100000;
+
+function getRebirthCost() {
+    return REBIRTH_BASE_COST * (rebirths + 1);
+}
+
+function getBaseClickMultiplier() {
+    return 1 + rebirths;
+}
 
 // Achievements
 const achievements = [
@@ -110,11 +124,56 @@ function toggleAchievements() {
 function updateUI() {
     counterText.textContent = cookieCount + " Victor(s)";
     rateText.textContent = cookiesPerSecond + " victor(s) per second | " + clickMultiplier + " victor(s) per click";
+    updateRebirthUI();
     checkAchievements();
 }
 
 updateUI();
 
+function updateRebirthUI() {
+    if (!rebirthButton || !rebirthText) return;
+
+    const cost = getRebirthCost();
+    rebirthButton.disabled = cookieCount < cost;
+    rebirthText.textContent = "Rebirths: " + rebirths + " | Cost: " + cost + " Victors | Bonus: +" + rebirths + " per click";
+}
+
+function resetUpgradeElements() {
+    for (const upgrade of upgrades) {
+        upgrade.count = 0;
+        upgrade.price = upgrade.originalPrice;
+
+        const el = document.getElementById("upgrade_" + upgrade.name);
+        if (!el) continue;
+
+        el.querySelector(".upgrade_counter").textContent = "x0";
+        el.querySelector(".upgrade_price").textContent = upgrade.price + "$";
+    }
+}
+
+function clearUpgradeVisuals() {
+    cookieContainer.querySelectorAll(".orbit_hand").forEach(hand => hand.remove());
+
+    const farmsSection = document.getElementById("farms_section");
+    if (farmsSection) farmsSection.innerHTML = "";
+}
+
+function rebirth() {
+    if (cookieCount < getRebirthCost()) return;
+
+    rebirths++;
+    cookieCount = 0;
+    cookiesPerSecond = 0;
+    clickMultiplier = getBaseClickMultiplier();
+
+    resetUpgradeElements();
+    clearUpgradeVisuals();
+    updateUI();
+}
+
+if (rebirthButton) {
+    rebirthButton.addEventListener("click", rebirth);
+}
 cookieButton.addEventListener("click", () => {
     totalClicks++;
     cookieCount += clickMultiplier;
@@ -185,7 +244,7 @@ function deleteUpgrade(upgrade, counterEl, el) {
     // Undo effects
     if (upgrade.name === "clicker") {
         clickMultiplier -= upgrade.count;
-        if (clickMultiplier < 1) clickMultiplier = 1;
+        if (clickMultiplier < getBaseClickMultiplier()) clickMultiplier = getBaseClickMultiplier();
         cookieContainer.querySelectorAll(".orbit_hand").forEach(h => h.remove());
     }
 
@@ -201,7 +260,7 @@ function deleteUpgrade(upgrade, counterEl, el) {
 
     if (upgrade.name === "gym") {
         clickMultiplier -= upgrade.count * 3;
-        if (clickMultiplier < 1) clickMultiplier = 1;
+        if (clickMultiplier < getBaseClickMultiplier()) clickMultiplier = getBaseClickMultiplier();
     }
 
     if (upgrade.name === "garden") {
@@ -246,7 +305,7 @@ function buyUpgrade(upgrade, counterEl) {
     }
 
     if (upgrade.name === "kid") {
-        if (clickMultiplier > 1) clickMultiplier--;
+        if (clickMultiplier > getBaseClickMultiplier()) clickMultiplier--;
         cookiesPerSecond += 4;
     }
 
