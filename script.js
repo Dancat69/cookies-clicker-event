@@ -12,7 +12,10 @@ class Upgrade {
 const upgrades = [
     new Upgrade("clicker", "Clicker", "Multiplies cookies per click", "res/upgrade_icons/clicker.png", 15, 0),
     new Upgrade("flower", "VictorFlower", "Nice flower does cool stuff", "res/upgrade_icons/flower.png", 45, 0),
-    new Upgrade("kid", "VictorKid", "Clicks 4x automatically but weakens your click by 1", "res/upgrade_icons/kid-victor.png", 125, 0),
+    new Upgrade("kid", "VictorKid", "Clicks 4x automatically but weakens your click by 1", "res/upgrade_icons/kid-victor.png", 85, 0),
+    new Upgrade("gym", "VictorGym", "Trains your click for +3 Victors per click", "res/upgrade_icons/clicker.png", 100, 0),
+    new Upgrade("garden", "VictorGarden", "Grows +10 Victors automatically every second", "res/upgrade_icons/flower.png", 175, 0),
+    new Upgrade("factory", "VictorFactory", "Produces +50 Victors per second and +2 Victors per click", "res/upgrade_icons/kid-victor.png", 225, 0),
 ];
 
 upgrades.forEach(u => u.originalPrice = u.price);
@@ -193,6 +196,23 @@ function deleteUpgrade(upgrade, counterEl, el) {
         if (cookiesPerSecond < 0) cookiesPerSecond = 0;
     }
 
+    if (upgrade.name === "gym") {
+        clickMultiplier -= upgrade.count * 3;
+        if (clickMultiplier < 1) clickMultiplier = 1;
+    }
+
+    if (upgrade.name === "garden") {
+        cookiesPerSecond -= upgrade.count * 10;
+        if (cookiesPerSecond < 0) cookiesPerSecond = 0;
+    }
+
+    if (upgrade.name === "factory") {
+        cookiesPerSecond -= upgrade.count * 50;
+        clickMultiplier -= upgrade.count * 2;
+        if (cookiesPerSecond < 0) cookiesPerSecond = 0;
+        if (clickMultiplier < 1) clickMultiplier = 1;
+    }
+
     // Remove farm panel
     const panel = document.getElementById("farm_panel_" + upgrade.name);
     if (panel) panel.remove();
@@ -225,6 +245,19 @@ function buyUpgrade(upgrade, counterEl) {
     if (upgrade.name === "kid") {
         if (clickMultiplier > 1) clickMultiplier--;
         cookiesPerSecond += 4;
+    }
+
+    if (upgrade.name === "gym") {
+        clickMultiplier += 3;
+    }
+
+    if (upgrade.name === "garden") {
+        cookiesPerSecond += 10;
+    }
+
+    if (upgrade.name === "factory") {
+        cookiesPerSecond += 50;
+        clickMultiplier += 2;
     }
 
     addFarmImage(upgrade);
