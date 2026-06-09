@@ -164,6 +164,48 @@ function addFarmImage(upgrade) {
     panel.appendChild(img);
 }
 
+function deleteUpgrade(upgrade, counterEl, el) {
+    if (upgrade.count === 0) return;
+
+    // Full refund with correct 1.25 scaling
+    let refund = 0;
+    let price = upgrade.price;
+    for (let i = 0; i < upgrade.count; i++) {
+        price = Math.ceil(price / 1.25);
+        refund += price;
+    }
+    cookieCount += refund;
+
+    // Undo effects
+    if (upgrade.name === "clicker") {
+        clickMultiplier -= upgrade.count;
+        if (clickMultiplier < 1) clickMultiplier = 1;
+        cookieContainer.querySelectorAll(".orbit_hand").forEach(h => h.remove());
+    }
+
+    if (upgrade.name === "flower") {
+        cookiesPerSecond -= upgrade.count;
+        if (cookiesPerSecond < 0) cookiesPerSecond = 0;
+    }
+
+    if (upgrade.name === "kid") {
+        cookiesPerSecond -= upgrade.count * 4;
+        if (cookiesPerSecond < 0) cookiesPerSecond = 0;
+    }
+
+    // Remove farm panel
+    const panel = document.getElementById("farm_panel_" + upgrade.name);
+    if (panel) panel.remove();
+
+    // Reset upgrade
+    upgrade.count = 0;
+    upgrade.price = upgrade.originalPrice;
+    counterEl.textContent = "x0";
+    el.querySelector(".upgrade_price").textContent = upgrade.price + "$";
+
+    updateUI();
+}
+
 function buyUpgrade(upgrade, counterEl) {
     console.log("buying", upgrade.name, "| cookies:", cookieCount, "| price:", upgrade.price);
     if (cookieCount < upgrade.price) return;
@@ -208,6 +250,7 @@ for (const upgrade of upgrades) {
                 <a class="upgrade_description">This is a really cool upgrade</a>
             </div>
             <a class="upgrade_counter">x0</a>
+            <button class="upgrade_delete"><img src="res/upgrade_icons/bin.png" class="bin_image" width="25px" height="25px"></button>
         </div>
     `);
 
@@ -218,6 +261,10 @@ for (const upgrade of upgrades) {
     el.querySelector(".upgrade_icon").setAttribute("src", upgrade.iconUrl);
 
     const counterEl = el.querySelector(".upgrade_counter");
+    el.querySelector(".upgrade_delete").addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteUpgrade(upgrade, counterEl, el);
+    });
     el.addEventListener("click", () => buyUpgrade(upgrade, counterEl));
 
     upgradesWindow.appendChild(el);
