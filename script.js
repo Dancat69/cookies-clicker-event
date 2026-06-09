@@ -28,6 +28,7 @@ const cookieContainer = document.querySelector(".cookie_container");
 let cookieCount = 0;
 let cookiesPerSecond = 0;
 let clickMultiplier = 1;
+let totalClicks = 0;
 
 // Achievements
 const achievements = [
@@ -35,6 +36,7 @@ const achievements = [
     { id: "vic_1000",   name: "Victor Enjoyer", desc: "Reach 1,000 Victors",   icon: "⭐", unlocked: false, check: () => cookieCount >= 1000 },
     { id: "vic_10000",  name: "Victor Master",  desc: "Reach 10,000 Victors",  icon: "🏆", unlocked: false, check: () => cookieCount >= 10000 },
     { id: "vic_100000", name: "Victor God",     desc: "Reach 100,000 Victors", icon: "👑", unlocked: false, check: () => cookieCount >= 100000 },
+    { id: "click_666666", name: "Number of the beast", desc: "Reach 666,666 Victors", icon: "🔥", unlocked: false, check: () => totalClicks >= 666666 },
 ];
 
 let popupQueue = [];
@@ -114,6 +116,7 @@ function updateUI() {
 updateUI();
 
 cookieButton.addEventListener("click", () => {
+    totalClicks++;
     cookieCount += clickMultiplier;
     updateUI();
 });
