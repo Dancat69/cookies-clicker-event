@@ -33,7 +33,6 @@ let clickMultiplier = 1;
 let totalClicks = 0;
 
 let rebirths = 0;
-
 const REBIRTH_BASE_COST = 100000;
 
 function getRebirthCost() {
@@ -46,11 +45,11 @@ function getBaseClickMultiplier() {
 
 // Achievements
 const achievements = [
-    { id: "vic_100",    name: "Baby Victor",    desc: "Reach 100 Victors",     icon: "🍪", unlocked: false, check: () => cookieCount >= 100 },
-    { id: "vic_1000",   name: "Victor Enjoyer", desc: "Reach 1,000 Victors",   icon: "⭐", unlocked: false, check: () => cookieCount >= 1000 },
-    { id: "vic_10000",  name: "Victor Master",  desc: "Reach 10,000 Victors",  icon: "🏆", unlocked: false, check: () => cookieCount >= 10000 },
-    { id: "vic_100000", name: "Victor God",     desc: "Reach 100,000 Victors", icon: "👑", unlocked: false, check: () => cookieCount >= 100000 },
-    { id: "click_666666", name: "Number of the beast", desc: "Reach 666,666 Victors", icon: "🔥", unlocked: false, check: () => totalClicks >= 666666 },
+    { id: "vic_100",    name: "Baby Victor",    desc: "Reach 100 Coins",     icon: "🍪", unlocked: false, check: () => cookieCount >= 100 },
+    { id: "vic_1000",   name: "Victor Enjoyer", desc: "Reach 1,000 Coins",   icon: "⭐", unlocked: false, check: () => cookieCount >= 1000 },
+    { id: "vic_10000",  name: "Victor Master",  desc: "Reach 10,000 Coins",  icon: "🏆", unlocked: false, check: () => cookieCount >= 10000 },
+    { id: "vic_100000", name: "Victor God",     desc: "Reach 100,000 Coins", icon: "👑", unlocked: false, check: () => cookieCount >= 100000 },
+    { id: "click_666666", name: "Number of the beast", desc: "Reach 666,666 Coins", icon: "🔥", unlocked: false, check: () => totalClicks >= 666666 },
 ];
 
 let popupQueue = [];
@@ -122,8 +121,8 @@ function toggleAchievements() {
 }
 
 function updateUI() {
-    counterText.textContent = cookieCount + " Victor(s)";
-    rateText.textContent = cookiesPerSecond + " victor(s) per second | " + clickMultiplier + " victor(s) per click";
+    counterText.textContent = cookieCount + " Coins";
+    rateText.textContent = cookiesPerSecond + " Coins per second | " + clickMultiplier + " Coins per click";
     updateRebirthUI();
     checkAchievements();
 }
@@ -135,7 +134,7 @@ function updateRebirthUI() {
 
     const cost = getRebirthCost();
     rebirthButton.disabled = cookieCount < cost;
-    rebirthText.textContent = "Rebirths: " + rebirths + " | Cost: " + cost + " Victors | Bonus: +" + rebirths + " per click";
+    rebirthText.textContent = "Rebirths: " + rebirths + " | Cost: " + cost + " Coins | Bonus: +" + rebirths + " per click";
 }
 
 function resetUpgradeElements() {
@@ -155,7 +154,11 @@ function clearUpgradeVisuals() {
     cookieContainer.querySelectorAll(".orbit_hand").forEach(hand => hand.remove());
 
     const farmsSection = document.getElementById("farms_section");
-    if (farmsSection) farmsSection.innerHTML = "";
+    if (farmsSection) {
+        // Keep the "farms" label, remove the actual panels
+        const panels = farmsSection.querySelectorAll(".farm_panel");
+        panels.forEach(p => p.remove());
+    }
 }
 
 function rebirth() {
@@ -174,6 +177,7 @@ function rebirth() {
 if (rebirthButton) {
     rebirthButton.addEventListener("click", rebirth);
 }
+
 cookieButton.addEventListener("click", () => {
     totalClicks++;
     cookieCount += clickMultiplier;
@@ -211,7 +215,7 @@ function addHandAroundCookie() {
 }
 
 function addFarmImage(upgrade) {
-    if (upgrade.name === "clicker") return;
+    if (upgrade.name === "clicker" || upgrade.name === "gym") return;
 
     const farmsSection = document.getElementById("farms_section");
     let panel = document.getElementById("farm_panel_" + upgrade.name);
@@ -272,7 +276,7 @@ function deleteUpgrade(upgrade, counterEl, el) {
         cookiesPerSecond -= upgrade.count * 50;
         clickMultiplier -= upgrade.count * 2;
         if (cookiesPerSecond < 0) cookiesPerSecond = 0;
-        if (clickMultiplier < 1) clickMultiplier = 1;
+        if (clickMultiplier < getBaseClickMultiplier()) clickMultiplier = getBaseClickMultiplier();
     }
 
     // Remove farm panel
@@ -289,7 +293,6 @@ function deleteUpgrade(upgrade, counterEl, el) {
 }
 
 function buyUpgrade(upgrade, counterEl) {
-    console.log("buying", upgrade.name, "| cookies:", cookieCount, "| price:", upgrade.price);
     if (cookieCount < upgrade.price) return;
 
     cookieCount -= upgrade.price;
@@ -365,27 +368,29 @@ for (const upgrade of upgrades) {
     upgradesWindow.appendChild(el);
 }
 
-// Rain effect
+// --- Rain effect trapped entirely inside the cookie_window ---
 const canvas = document.getElementById("rain_canvas");
 const ctx = canvas.getContext("2d");
+const cookieWindow = document.querySelector(".cookie_window");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+function resizeCanvas() {
+    // Measure only the left panel window
+    canvas.width = cookieWindow.clientWidth;
+    canvas.height = cookieWindow.clientHeight;
+}
 
-window.addEventListener("resize", () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
 
 const rainImage = new Image();
-rainImage.src = "res/cookie.png";
+rainImage.src = "res/cookie.png"; 
 
-const drops = Array.from({ length: 60 }, () => ({
-    x: Math.random() * window.innerWidth,
-    y: Math.random() * window.innerHeight,
-    speed: 2 + Math.random() * 4,
-    size: 20 + Math.random() * 30,
-    opacity: 0.4 + Math.random() * 0.6,
+let drops = Array.from({ length: 40 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    speed: 2 + Math.random() * 3,
+    size: 20 + Math.random() * 25,
+    opacity: 0.2 + Math.random() * 0.4,
     wobble: Math.random() * Math.PI * 2,
 }));
 
@@ -411,17 +416,38 @@ function drawRain() {
     requestAnimationFrame(drawRain);
 }
 
-rainImage.onload = () => drawRain();
+rainImage.onload = () => {
+    console.log("Rain image loaded! Starting animation...");
+    drawRain();
+};
 
-// --- Custom coin face: re-mint the Victor coin with your uploaded photo ---
-const COIN_FACE_KEY    = "siwatko_coin_face"; // isolated key — independent of game-state saving
-const COIN_FACE_SIZE   = 512;                 // output px (coin art is square); crisp but small
-const COIN_FACE_RADIUS = 0.34;                // inner face circle as a fraction of size
-const COIN_FACE_OPAQUE = 0.90;                // face stays solid out to this fraction of the radius, then feathers
+rainImage.onerror = () => {
+    alert("⚠️ ERROR: Cannot find 'res/cookie.png'!\n\nCheck that the file exists, is named correctly, and is a .png file.");
+    
+    // Fallback: draw brown squares so we know the code works!
+    ctx.fillStyle = "#ff0000";
+    function drawFallbackRain() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drops.forEach(drop => {
+            ctx.globalAlpha = drop.opacity;
+            ctx.fillRect(drop.x, drop.y, drop.size, drop.size);
+            drop.y += drop.speed;
+            drop.x += Math.sin(drop.wobble) * 0.5;
+            drop.wobble += 0.02;
+            if (drop.y > canvas.height) { drop.y = -drop.size; drop.x = Math.random() * canvas.width; }
+        });
+        requestAnimationFrame(drawFallbackRain);
+    }
+    drawFallbackRain();
+};
+// --- Custom coin face logic ---
+const COIN_FACE_KEY    = "siwatko_coin_face"; 
+const COIN_FACE_SIZE   = 512;                 
+const COIN_FACE_RADIUS = 0.34;                
+const COIN_FACE_OPAQUE = 0.90;                
 const coinUploadInput  = document.getElementById("coin_upload_input");
 const coinResetButton  = document.getElementById("coin_reset");
 
-// The Victor coin art, reused as the rim + backing for custom faces.
 const coinFrame = new Image();
 coinFrame.src = "res/coin.png";
 
@@ -432,40 +458,33 @@ function applyCoinFace(dataUrl) {
 }
 
 function resetCoinFace() {
-    cookieButton.style.backgroundImage = ""; // drop inline style → falls back to res/coin.png
+    cookieButton.style.backgroundImage = ""; 
     cookieButton.classList.remove("custom_face");
     coinResetButton.hidden = true;
     localStorage.removeItem(COIN_FACE_KEY);
 }
 
-// Re-mint the coin: drop the photo into the inner circle with a GRADIENT gold
-// wash — light in the centre (face stays readable), stronger toward the edges
-// so it melts into the coin's gold rim — then layer it under the coin art.
 function buildCoinFace(image) {
     const S = COIN_FACE_SIZE;
     const cx = S / 2, cy = S / 2;
-    const r = S * COIN_FACE_RADIUS;            // inner face radius
+    const r = S * COIN_FACE_RADIUS;            
     const box = r * 2;
 
-    // Square-crop the source so the face isn't distorted.
     const side = Math.min(image.width, image.height);
     const sx = (image.width - side) / 2;
     const sy = (image.height - side) / 2;
 
-    // 1) Build the gold-filtered, feathered face on a scratch canvas.
     const face = document.createElement("canvas");
     face.width = face.height = S;
     const f = face.getContext("2d");
 
     f.drawImage(image, sx, sy, side, side, cx - r, cy - r, box, box);
 
-    // Subtle uniform sheen so the whole face reads as minted metal.
     f.globalCompositeOperation = "soft-light";
     f.globalAlpha = 0.35;
     f.fillStyle = "#f4c20d";
     f.fillRect(cx - r, cy - r, box, box);
 
-    // Gradient gold tint — barely there in the centre, strong at the edges.
     f.globalCompositeOperation = "source-over";
     f.globalAlpha = 1;
     const wash = f.createRadialGradient(cx, cy, r * 0.25, cx, cy, r);
@@ -476,7 +495,6 @@ function buildCoinFace(image) {
     f.fillStyle = wash;
     f.fillRect(cx - r, cy - r, box, box);
 
-    // Feather the edge to a circle so there's no hard seam against the rim.
     f.globalCompositeOperation = "destination-in";
     const mask = f.createRadialGradient(cx, cy, r * COIN_FACE_OPAQUE, cx, cy, r);
     mask.addColorStop(0, "rgba(0,0,0,1)");
@@ -484,14 +502,13 @@ function buildCoinFace(image) {
     f.fillStyle = mask;
     f.fillRect(0, 0, S, S);
 
-    // 2) Compose: Victor coin (rim + backing) under the freshly minted face.
     const out = document.createElement("canvas");
     out.width = out.height = S;
     const o = out.getContext("2d");
     o.drawImage(coinFrame, 0, 0, S, S);
     o.drawImage(face, 0, 0);
 
-    return out.toDataURL("image/webp", 0.92); // falls back to PNG if webp unsupported
+    return out.toDataURL("image/webp", 0.92); 
 }
 
 coinUploadInput.addEventListener("change", () => {
@@ -511,18 +528,16 @@ coinUploadInput.addEventListener("change", () => {
                 console.warn("Could not save coin face (storage full?):", e);
             }
         };
-        // The coin art must be decoded before we can composite onto it.
         if (coinFrame.complete && coinFrame.naturalWidth) finish();
         else coinFrame.addEventListener("load", finish, { once: true });
     };
     image.onerror = () => URL.revokeObjectURL(objectUrl);
     image.src = objectUrl;
 
-    coinUploadInput.value = ""; // allow re-uploading the same file
+    coinUploadInput.value = ""; 
 });
 
 coinResetButton.addEventListener("click", resetCoinFace);
 
-// Restore a previously uploaded coin on load
 const savedCoinFace = localStorage.getItem(COIN_FACE_KEY);
 if (savedCoinFace) applyCoinFace(savedCoinFace);
