@@ -435,6 +435,19 @@ nav > button:ACTIVE {
 .achievement_row_name { font-size: 14px; font-weight: bold; color: white; }
 .achievement_row_desc { font-size: 11px; color: #aaa; }
 
+#walking-cat {
+    position: fixed;
+    bottom: 0;
+    left: -100px;
+    width: 100px;
+    z-index: 9999;
+    animation: walk 8s linear infinite;
+  }
+  @keyframes walk {
+    from { left: -100px; }
+    to   { left: 100%;   }
+  }
+
 /* ── MOBILE RESPONSIVENESS ──────────────────────────── */
 @media screen and (max-width: 860px) {
     .app {
