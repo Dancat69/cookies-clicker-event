@@ -276,7 +276,7 @@ nav > button:ACTIVE {
     
     /* The landscape background */
     background-color: #87CEEB; 
-    background-image: url('res/landscape.png'); 
+    background-image: url('res/field.png'); 
     background-size: cover;
     background-position: center bottom;
     border: 2px solid #e0e0e0;
@@ -434,19 +434,6 @@ nav > button:ACTIVE {
 .achievement_row_body { display: flex; flex-direction: column; gap: 2px; }
 .achievement_row_name { font-size: 14px; font-weight: bold; color: white; }
 .achievement_row_desc { font-size: 11px; color: #aaa; }
-
-#walking-cat {
-    position: fixed;
-    bottom: 0;
-    left: -100px;
-    width: 100px;
-    z-index: 9999;
-    animation: walk 8s linear infinite;
-  }
-  @keyframes walk {
-    from { left: -100px; }
-    to   { left: 100%;   }
-  }
 
 /* ── MOBILE RESPONSIVENESS ──────────────────────────── */
 @media screen and (max-width: 860px) {

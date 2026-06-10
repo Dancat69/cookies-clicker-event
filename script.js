@@ -155,7 +155,6 @@ function clearUpgradeVisuals() {
 
     const farmsSection = document.getElementById("farms_section");
     if (farmsSection) {
-        // Keep the "farms" label, remove the actual panels
         const panels = farmsSection.querySelectorAll(".farm_panel");
         panels.forEach(p => p.remove());
     }
@@ -178,9 +177,60 @@ if (rebirthButton) {
     rebirthButton.addEventListener("click", rebirth);
 }
 
-cookieButton.addEventListener("click", () => {
+// --- Floating +N text ---
+function spawnFloatingText(x, y, value) {
+    const el = document.createElement("div");
+    el.textContent = "+" + value;
+    el.style.cssText = [
+        "position:fixed",
+        "left:" + x + "px",
+        "top:" + y + "px",
+        "pointer-events:none",
+        "font-size:22px",
+        "font-weight:700",
+        "color:#f4c20d",
+        "text-shadow:0 1px 4px rgba(0,0,0,0.5)",
+        "transform:translateX(-50%)",
+        "transition:top 0.8s ease-out,opacity 0.8s ease-out",
+        "z-index:9999",
+        "user-select:none",
+    ].join(";");
+    document.body.appendChild(el);
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            el.style.top = (y - 70) + "px";
+            el.style.opacity = "0";
+        });
+    });
+    setTimeout(() => el.remove(), 900);
+}
+
+cookieButton.addEventListener("click", (e) => {
     totalClicks++;
     cookieCount += clickMultiplier;
+    spawnFloatingText(e.clientX, e.clientY, clickMultiplier);
+    updateUI();
+});
+
+// --- Mezerník pro klikání (jen jeden stisk, ne držení) ---
+document.addEventListener("keydown", (e) => {
+    if (e.code !== "Space") return;
+    if (e.repeat) return;
+
+    const tag = document.activeElement ? document.activeElement.tagName : "";
+    const isTyping = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+    const isOtherButton = tag === "BUTTON" && document.activeElement !== cookieButton;
+    if (isTyping || isOtherButton) return;
+
+    e.preventDefault();
+    if (document.activeElement === cookieButton) cookieButton.blur();
+
+    const rect = cookieButton.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    totalClicks++;
+    cookieCount += clickMultiplier;
+    spawnFloatingText(cx, cy, clickMultiplier);
     updateUI();
 });
 
@@ -236,7 +286,6 @@ function addFarmImage(upgrade) {
 function deleteUpgrade(upgrade, counterEl, el) {
     if (upgrade.count === 0) return;
 
-    // Full refund with correct 1.25 scaling
     let refund = 0;
     let price = upgrade.price;
     for (let i = 0; i < upgrade.count; i++) {
@@ -245,7 +294,6 @@ function deleteUpgrade(upgrade, counterEl, el) {
     }
     cookieCount += refund;
 
-    // Undo effects
     if (upgrade.name === "clicker") {
         clickMultiplier -= upgrade.count;
         if (clickMultiplier < getBaseClickMultiplier()) clickMultiplier = getBaseClickMultiplier();
@@ -279,11 +327,9 @@ function deleteUpgrade(upgrade, counterEl, el) {
         if (clickMultiplier < getBaseClickMultiplier()) clickMultiplier = getBaseClickMultiplier();
     }
 
-    // Remove farm panel
     const panel = document.getElementById("farm_panel_" + upgrade.name);
     if (panel) panel.remove();
 
-    // Reset upgrade
     upgrade.count = 0;
     upgrade.price = upgrade.originalPrice;
     counterEl.textContent = "x0";
@@ -363,18 +409,42 @@ for (const upgrade of upgrades) {
         e.stopPropagation();
         deleteUpgrade(upgrade, counterEl, el);
     });
-    el.addEventListener("click", () => buyUpgrade(upgrade, counterEl));
+
+    // Hold-to-buy: první nákup okamžitě, po 400ms začne opakovat každých 100ms
+    let holdTimeout = null;
+    let holdInterval = null;
+
+    function startHold(e) {
+        if (e.target.closest(".upgrade_delete")) return;
+        buyUpgrade(upgrade, counterEl);
+        holdTimeout = setTimeout(() => {
+            holdInterval = setInterval(() => buyUpgrade(upgrade, counterEl), 100);
+        }, 400);
+    }
+
+    function stopHold() {
+        clearTimeout(holdTimeout);
+        clearInterval(holdInterval);
+        holdTimeout = null;
+        holdInterval = null;
+    }
+
+    el.addEventListener("mousedown", startHold);
+    el.addEventListener("mouseup", stopHold);
+    el.addEventListener("mouseleave", stopHold);
+    el.addEventListener("touchstart", (e) => { e.preventDefault(); startHold(e); }, { passive: false });
+    el.addEventListener("touchend", stopHold);
+    el.addEventListener("touchcancel", stopHold);
 
     upgradesWindow.appendChild(el);
 }
 
-// --- Rain effect trapped entirely inside the cookie_window ---
+// --- Rain effect ---
 const canvas = document.getElementById("rain_canvas");
 const ctx = canvas.getContext("2d");
 const cookieWindow = document.querySelector(".cookie_window");
 
 function resizeCanvas() {
-    // Measure only the left panel window
     canvas.width = cookieWindow.clientWidth;
     canvas.height = cookieWindow.clientHeight;
 }
@@ -383,7 +453,7 @@ resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
 const rainImage = new Image();
-rainImage.src = "res/cookie.png"; 
+rainImage.src = "res/cookie.png";
 
 let drops = Array.from({ length: 40 }, () => ({
     x: Math.random() * canvas.width,
@@ -423,8 +493,7 @@ rainImage.onload = () => {
 
 rainImage.onerror = () => {
     alert("⚠️ ERROR: Cannot find 'res/cookie.png'!\n\nCheck that the file exists, is named correctly, and is a .png file.");
-    
-    // Fallback: draw brown squares so we know the code works!
+
     ctx.fillStyle = "#ff0000";
     function drawFallbackRain() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -440,11 +509,12 @@ rainImage.onerror = () => {
     }
     drawFallbackRain();
 };
+
 // --- Custom coin face logic ---
-const COIN_FACE_KEY    = "siwatko_coin_face"; 
-const COIN_FACE_SIZE   = 512;                 
-const COIN_FACE_RADIUS = 0.34;                
-const COIN_FACE_OPAQUE = 0.90;                
+const COIN_FACE_KEY    = "siwatko_coin_face";
+const COIN_FACE_SIZE   = 512;
+const COIN_FACE_RADIUS = 0.34;
+const COIN_FACE_OPAQUE = 0.90;
 const coinUploadInput  = document.getElementById("coin_upload_input");
 const coinResetButton  = document.getElementById("coin_reset");
 
@@ -458,7 +528,7 @@ function applyCoinFace(dataUrl) {
 }
 
 function resetCoinFace() {
-    cookieButton.style.backgroundImage = ""; 
+    cookieButton.style.backgroundImage = "";
     cookieButton.classList.remove("custom_face");
     coinResetButton.hidden = true;
     localStorage.removeItem(COIN_FACE_KEY);
@@ -467,7 +537,7 @@ function resetCoinFace() {
 function buildCoinFace(image) {
     const S = COIN_FACE_SIZE;
     const cx = S / 2, cy = S / 2;
-    const r = S * COIN_FACE_RADIUS;            
+    const r = S * COIN_FACE_RADIUS;
     const box = r * 2;
 
     const side = Math.min(image.width, image.height);
@@ -508,7 +578,7 @@ function buildCoinFace(image) {
     o.drawImage(coinFrame, 0, 0, S, S);
     o.drawImage(face, 0, 0);
 
-    return out.toDataURL("image/webp", 0.92); 
+    return out.toDataURL("image/webp", 0.92);
 }
 
 coinUploadInput.addEventListener("change", () => {
@@ -534,7 +604,7 @@ coinUploadInput.addEventListener("change", () => {
     image.onerror = () => URL.revokeObjectURL(objectUrl);
     image.src = objectUrl;
 
-    coinUploadInput.value = ""; 
+    coinUploadInput.value = "";
 });
 
 coinResetButton.addEventListener("click", resetCoinFace);
