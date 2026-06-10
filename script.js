@@ -544,6 +544,7 @@ function buildCoinFace(image) {
     const sx = (image.width - side) / 2;
     const sy = (image.height - side) / 2;
 
+    // 1) Build the gold-filtered, feathered face on a scratch canvas.
     const face = document.createElement("canvas");
     face.width = face.height = S;
     const f = face.getContext("2d");
