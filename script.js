@@ -18,6 +18,18 @@ const upgrades = [
     new Upgrade("factory", "VictorFactory", "Produces +50 Victors per second and +2 Victors per click", "res/upgrade_icons/victorFactory.png", 225, 0),
 ];
 
+// Unlock thresholds
+const unlockAt = {
+    clicker: 0,
+    flower:  100,
+    kid:     175,
+    gym:     225,
+    garden:  300,
+    factory: 400,
+};
+
+const permanentlyUnlocked = new Set();
+
 upgrades.forEach(u => u.originalPrice = u.price);
 
 const cookieButton = document.getElementById("cookie_button");
@@ -132,7 +144,6 @@ function showNextPopup() {
     if (popupQueue.length === 0) { popupShowing = false; return; }
     popupShowing = true;
     const achievement = popupQueue.shift();
-
     const popup = document.createElement("div");
     popup.classList.add("achievement_popup");
     popup.innerHTML = `
@@ -163,30 +174,86 @@ function checkAchievements() {
 
 function toggleAchievements() {
     const panel = document.getElementById("achievements_panel");
+    const isOpening = !panel.classList.contains("open");
+
     panel.classList.toggle("open");
-    panel.innerHTML = "";
-    for (const achievement of achievements) {
-        const row = document.createElement("div");
-        row.classList.add("achievement_row");
-        if (!achievement.unlocked) row.classList.add("locked");
-        row.innerHTML = `
-            <div class="achievement_row_icon">${achievement.icon}</div>
-            <div class="achievement_row_body">
-                <span class="achievement_row_name">${achievement.name}</span>
-                <span class="achievement_row_desc">${achievement.unlocked ? achievement.desc : "???"}</span>
-            </div>
-        `;
-        panel.appendChild(row);
+
+    if (isOpening) {
+        panel.innerHTML = "";
+        for (const achievement of achievements) {
+            const row = document.createElement("div");
+            row.classList.add("achievement_row");
+            if (!achievement.unlocked) row.classList.add("locked");
+            row.innerHTML = `
+                <div class="achievement_row_icon">${achievement.icon}</div>
+                <div class="achievement_row_body">
+                    <span class="achievement_row_name">${achievement.name}</span>
+                    <span class="achievement_row_desc">${achievement.unlocked ? achievement.desc : "???"}</span>
+                </div>
+            `;
+            panel.appendChild(row);
+        }
+
+        // Close when clicking anywhere outside
+        setTimeout(() => {
+            document.addEventListener("click", closeAchievementsOutside);
+        }, 0);
+    }
+}
+
+function closeAchievementsOutside(e) {
+    const panel = document.getElementById("achievements_panel");
+    const btn = document.getElementById("achievements_button");
+    if (!panel.contains(e.target) && e.target !== btn) {
+        panel.classList.remove("open");
+        document.removeEventListener("click", closeAchievementsOutside);
+    }
+}
+
+function closeAchievementsOutside(e) {
+    const panel = document.getElementById("achievements_panel");
+    const btn = document.getElementById("achievements_button");
+    if (!panel.contains(e.target) && e.target !== btn) {
+        panel.classList.remove("open");
+        document.removeEventListener("click", closeAchievementsOutside);
     }
 }
 
 // ─── UI ───
+function updateUpgradeVisibility() {
+    for (const upgrade of upgrades) {
+        const el = document.getElementById("upgrade_" + upgrade.name);
+        if (!el) continue;
+        const threshold = unlockAt[upgrade.name] ?? 0;
+        if (cookieCount >= threshold || upgrade.count > 0) {
+            el.classList.remove("upgrade_locked");
+        } else {
+            el.classList.add("upgrade_locked");
+        }
+    }
+}
+
+function updateCoinUploadVisibility() {
+    const label = document.querySelector(".coin_upload");
+    const hint = document.querySelector(".coin_upload_hint");
+    if (!label) return;
+    if (cookieCount >= 1000) {
+        label.classList.remove("coin_upload_locked");
+        if (hint) hint.style.display = "none";
+    } else {
+        label.classList.add("coin_upload_locked");
+        if (hint) hint.style.display = "inline";
+    }
+}
+
 function updateUI() {
     counterText.textContent = cookieCount.toLocaleString() + " Coins";
     let activeCps = Math.ceil(cookiesPerSecond * globalMultiplier);
     let activeCpc = Math.ceil(clickMultiplier * globalMultiplier);
     rateText.textContent = activeCps.toLocaleString() + " Coins per second | " + activeCpc.toLocaleString() + " Coins per click";
     updateRebirthUI();
+    updateCoinUploadVisibility();
+    updateUpgradeVisibility();
     checkAchievements();
 }
 
@@ -195,10 +262,8 @@ function updateRebirthUI() {
     const btnFill = document.getElementById("rebirth_btn_fill");
     const btnText = document.getElementById("rebirth_btn_text");
     if (!rebirthButton || !btnFill || !btnText) return;
-
     let percentage = Math.min((cookieCount / cost) * 100, 100);
     btnFill.style.width = percentage + "%";
-
     if (cookieCount >= cost) {
         rebirthButton.disabled = false;
         btnText.textContent = "⚡ REBIRTH UP! ⚡";
@@ -264,18 +329,16 @@ function spawnFloatingText(x, y, value) {
     setTimeout(() => el.remove(), 800);
 }
 
-// ─── COOKIE BUTTON CLICK ───
+// ─── CLICK HANDLER ───
 cookieButton.addEventListener("click", (e) => {
     manualClicks++;
     totalClicks++;
     lastActivityTime = Date.now();
-
     const hour = new Date().getHours();
     const min = new Date().getMinutes();
     if (hour === 0 && min === 0) midnightClicked = true;
     if (hour === 3) threeAmClicked = true;
     if (!lotteryWon && Math.random() < 0.00001) lotteryWon = true;
-
     let clickValue = Math.ceil(clickMultiplier * globalMultiplier);
     cookieCount += clickValue;
     spawnFloatingText(e.clientX, e.clientY, clickValue);
@@ -284,9 +347,20 @@ cookieButton.addEventListener("click", (e) => {
     updateUI();
 });
 
-// ─── BACKGROUND CLICK TRACKING ───
 document.addEventListener("click", (e) => {
-    if (e.target === document.body || e.target === document.getElementById("rain_canvas")) {
+    const ignored = ["cookie_button", "achievements_button", "leaderboard_button", "rebirth_button", "rebirth_upgrade_button", "coin_reset", "afk_yes"];
+    const ignoredClasses = ["upgrade", "upgrade_delete", "upgrade_icon", "upgrade_title", "upgrade_description", "upgrade_counter", "upgrade_price", "coin_upload", "skill_node", "golden_victor", "secret_victor", "achievement_popup", "close_skill_tree"];
+
+    const isIgnored =
+        ignored.includes(e.target.id) ||
+        ignoredClasses.some(cls => e.target.classList.contains(cls)) ||
+        e.target.closest(".upgrade") ||
+        e.target.closest("nav") ||
+        e.target.closest(".skill_tree_panel") ||
+        e.target.closest(".achievement_popup") ||
+        e.target === cookieButton;
+
+    if (!isIgnored) {
         bgClicks++;
         lastActivityTime = Date.now();
     }
@@ -299,7 +373,6 @@ const OGABEEK = "Ogabeek";
 let ogabeekProgress = 0;
 
 document.addEventListener("keydown", (e) => {
-    // Space bar
     if (e.code === "Space" && !e.repeat) {
         const tag = document.activeElement ? document.activeElement.tagName : "";
         const isTyping = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
@@ -324,7 +397,6 @@ document.addEventListener("keydown", (e) => {
         }
     }
 
-    // Konami code
     if (e.key === SECRET_CODE[secretCodeProgress]) {
         secretCodeProgress++;
         if (secretCodeProgress === SECRET_CODE.length) {
@@ -332,11 +404,8 @@ document.addEventListener("keydown", (e) => {
             secretCodeProgress = 0;
             checkAchievements();
         }
-    } else {
-        secretCodeProgress = 0;
-    }
+    } else { secretCodeProgress = 0; }
 
-    // Ogabeek
     if (e.key === OGABEEK[ogabeekProgress]) {
         ogabeekProgress++;
         if (ogabeekProgress === OGABEEK.length) {
@@ -344,9 +413,7 @@ document.addEventListener("keydown", (e) => {
             ogabeekProgress = 0;
             checkAchievements();
         }
-    } else {
-        ogabeekProgress = 0;
-    }
+    } else { ogabeekProgress = 0; }
 });
 
 // ─── PASSIVE INCOME ───
@@ -360,7 +427,7 @@ setInterval(() => {
 // ─── SESSION TIMER ───
 setInterval(() => { sessionSeconds++; }, 1000);
 
-// ─── AFK DETECTION ───
+// ─── AFK ───
 ["click", "keydown", "mousemove"].forEach(evt => {
     document.addEventListener(evt, () => { lastActivityTime = Date.now(); });
 });
@@ -369,7 +436,6 @@ function showAfkPrompt() {
     if (document.getElementById("afk_prompt")) return;
     const wasCps = cookiesPerSecond;
     cookiesPerSecond = 0;
-
     const prompt = document.createElement("div");
     prompt.id = "afk_prompt";
     prompt.innerHTML = `
@@ -388,7 +454,7 @@ function showAfkPrompt() {
 }
 
 setInterval(() => {
-    if (Date.now() - lastActivityTime > 60000) showAfkPrompt();
+    if (Date.now() - lastActivityTime > 600000) showAfkPrompt();
 }, 10000);
 
 // ─── GOLDEN VICTOR ───
@@ -399,30 +465,26 @@ function spawnGoldenVictor() {
     gv.src = "res/coin.png";
     gv.classList.add("golden_victor");
     document.body.appendChild(gv);
-
     const startY = Math.random() * (window.innerHeight - 80);
     gv.style.top = startY + "px";
     gv.style.left = "-80px";
-
     let pos = -80;
     const interval = setInterval(() => {
         pos += 4;
         gv.style.left = pos + "px";
         if (pos > window.innerWidth + 80) { clearInterval(interval); if (gv.parentNode) gv.remove(); }
     }, 16);
-
     const autoRemove = setTimeout(() => {
         clearInterval(interval);
         if (gv.parentNode) gv.remove();
     }, 5000);
-
     gv.addEventListener("click", () => {
         clearInterval(interval);
         clearTimeout(autoRemove);
         goldenVictorClicked++;
-        const boost = clickMultiplier;
-        clickMultiplier += 2;
-        setTimeout(() => { clickMultiplier = boost; }, 10000);
+        const boost = cookiesPerSecond;
+        cookiesPerSecond *= 2;
+        setTimeout(() => { cookiesPerSecond = boost; }, 10000);
         spawnFloatingText(pos, startY, "2x CPS for 10s!");
         gv.remove();
         checkAchievements();
@@ -466,9 +528,7 @@ function addHandAroundCookie() {
     const hands = cookieContainer.querySelectorAll(".orbit_hand");
     const totalHands = hands.length;
     const newTotal = totalHands + 1;
-    hands.forEach((hand, i) => {
-        hand.style.setProperty("--angle", ((i * 360) / newTotal) + "deg");
-    });
+    hands.forEach((hand, i) => { hand.style.setProperty("--angle", ((i * 360) / newTotal) + "deg"); });
     const hand = document.createElement("img");
     const upgradeClicker = upgrades.find(u => u.name === "clicker");
     hand.src = upgradeClicker ? upgradeClicker.iconUrl : "res/upgrade_icons/clicker.png";
@@ -503,12 +563,28 @@ function deleteUpgrade(upgrade, counterEl, el) {
     }
     cookieCount += refund;
 
-    if (upgrade.name === "clicker") { clickMultiplier -= upgrade.count; if (clickMultiplier < getBaseClickMultiplier()) clickMultiplier = getBaseClickMultiplier(); cookieContainer.querySelectorAll(".orbit_hand").forEach(h => h.remove()); }
+    if (upgrade.name === "clicker") {
+        clickMultiplier -= upgrade.count;
+        if (clickMultiplier < getBaseClickMultiplier()) clickMultiplier = getBaseClickMultiplier();
+        cookieContainer.querySelectorAll(".orbit_hand").forEach(h => h.remove());
+    }
     if (upgrade.name === "flower") { cookiesPerSecond -= upgrade.count; if (cookiesPerSecond < 0) cookiesPerSecond = 0; }
-    if (upgrade.name === "kid") { cookiesPerSecond -= upgrade.count * 4; if (cookiesPerSecond < 0) cookiesPerSecond = 0; }
+    if (upgrade.name === "kid") {
+        // Restore CPS
+        cookiesPerSecond -= upgrade.count * 4;
+        if (cookiesPerSecond < 0) cookiesPerSecond = 0;
+        // Restore the click multiplier that was lost when buying kid
+        clickMultiplier += upgrade.count;
+        if (clickMultiplier < getBaseClickMultiplier()) clickMultiplier = getBaseClickMultiplier();
+    }
     if (upgrade.name === "gym") { clickMultiplier -= upgrade.count * 3; if (clickMultiplier < getBaseClickMultiplier()) clickMultiplier = getBaseClickMultiplier(); }
     if (upgrade.name === "garden") { cookiesPerSecond -= upgrade.count * 10; if (cookiesPerSecond < 0) cookiesPerSecond = 0; }
-    if (upgrade.name === "factory") { cookiesPerSecond -= upgrade.count * 50; clickMultiplier -= upgrade.count * 2; if (cookiesPerSecond < 0) cookiesPerSecond = 0; if (clickMultiplier < getBaseClickMultiplier()) clickMultiplier = getBaseClickMultiplier(); }
+    if (upgrade.name === "factory") {
+        cookiesPerSecond -= upgrade.count * 50;
+        clickMultiplier -= upgrade.count * 2;
+        if (cookiesPerSecond < 0) cookiesPerSecond = 0;
+        if (clickMultiplier < getBaseClickMultiplier()) clickMultiplier = getBaseClickMultiplier();
+    }
 
     const panel = document.getElementById("farm_panel_" + upgrade.name);
     if (panel) panel.remove();
@@ -523,14 +599,12 @@ function buyUpgrade(upgrade, counterEl) {
     if (cookieCount < upgrade.price) return;
     cookieCount -= upgrade.price;
     upgrade.count++;
-
     if (upgrade.name === "clicker") { clickMultiplier++; addHandAroundCookie(); }
     if (upgrade.name === "flower") { cookiesPerSecond++; }
     if (upgrade.name === "kid") { if (clickMultiplier > getBaseClickMultiplier()) clickMultiplier--; cookiesPerSecond += 4; }
     if (upgrade.name === "gym") { clickMultiplier += 3; }
     if (upgrade.name === "garden") { cookiesPerSecond += 10; }
     if (upgrade.name === "factory") { cookiesPerSecond += 50; clickMultiplier += 2; }
-
     addFarmImage(upgrade);
     upgrade.price = Math.ceil(upgrade.price * 1.25);
     counterEl.textContent = "x" + upgrade.count;
@@ -683,11 +757,8 @@ coinUploadInput.addEventListener("change", () => {
         const dataUrl = e.target.result;
         applyCoinFace(dataUrl);
         rainImage.src = dataUrl;
-        try {
-            localStorage.setItem(COIN_FACE_KEY, dataUrl);
-        } catch (err) {
-            console.warn("Could not save coin face:", err);
-        }
+        try { localStorage.setItem(COIN_FACE_KEY, dataUrl); }
+        catch (err) { console.warn("Could not save coin face:", err); }
     };
     reader.readAsDataURL(file);
     coinUploadInput.value = "";

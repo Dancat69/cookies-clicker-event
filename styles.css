@@ -506,16 +506,16 @@ nav > .rebirth_container > button:ACTIVE { background-color: #e6ac01; }
     border: 2px solid gold;
     border-radius: 12px;
     padding: 20px;
-    margin-top: 10px;
     width: 320px;
-    max-height: 380px;
+    max-height: 80vh;
     overflow-y: auto;
-    position: absolute;
+    position: fixed;
     top: 65px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 20px;
     z-index: 100;
 }
+
+.achievements_panel.open { display: flex; }
 
 .achievements_panel.open { display: flex; }
 .achievement_row { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 8px; background-color: #2a2a2a; }
@@ -709,3 +709,48 @@ nav > .rebirth_container > button:ACTIVE { background-color: #e6ac01; }
 }
 
 .secret_victor:hover { opacity: 0.8 !important; }
+
+.upgrade_locked {
+    pointer-events: none;
+}
+
+.upgrade_locked .upgrade_icon {
+    filter: brightness(0);
+}
+
+.upgrade_locked .upgrade_title,
+.upgrade_locked .upgrade_description,
+.upgrade_locked .upgrade_counter,
+.upgrade_locked .upgrade_price {
+    color: transparent !important;
+    text-shadow: none;
+    user-select: none;
+}
+
+.upgrade_locked .upgrade_body::after {
+    content: "???";
+    font-size: 15px;
+    font-weight: 700;
+    color: #666;
+}
+
+.upgrade_locked .upgrade_delete {
+    display: none;
+}
+
+.coin_upload_locked {
+    pointer-events: none;
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.coin_upload_hint {
+    display: none;
+    font-size: 11px;
+    color: #F8CD47;
+    font-weight: 600;
+}
+
+.coin_upload_locked ~ .coin_upload_hint {
+    display: inline;
+}
