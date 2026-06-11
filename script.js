@@ -45,7 +45,7 @@ let lastFloatingTextTime = 0;
 // ─── AUDIO SYSTÉM (Opravené přehrávání na pozadí v loopu) ───
 
 const sounds = {
-    bg: new Audio("sounds/bg.mp3"),
+    bg: new Audio("sounds/bg.ogg"),
     click: new Audio("sounds/click.mp3"),
     buy: new Audio("sounds/buy.mp3"),
     rebirth: new Audio("sounds/rebirth.mp3")
@@ -100,7 +100,7 @@ function getBaseClickMultiplier() {
 const achievements = [
     { id: "vic_100",    name: "Baby Victor",    desc: "Reach 100 Coins",     icon: "🍪", unlocked: false, check: () => cookieCount >= 100 },
     { id: "vic_1000",   name: "Victor Enjoyer", desc: "Reach 1,000 Coins",   icon: "⭐", unlocked: false, check: () => cookieCount >= 1000 },
-    { id: "vic_10000",  name: "Victor Master",  desc: "Reach 1,000 Coins",  icon: "🏆", unlocked: false, check: () => cookieCount >= 10000 },
+    { id: "vic_10000",  name: "Victor Master",  desc: "Reach 10,000 Coins",  icon: "🏆", unlocked: false, check: () => cookieCount >= 10000 },
     { id: "vic_100000", name: "Victor God",     desc: "Reach 100,000 Coins", icon: "👑", unlocked: false, check: () => cookieCount >= 100000 },
     { id: "click_666666", name: "Number of the beast", desc: "Reach 666,666 Coins", icon: "🔥", unlocked: false, check: () => totalClicks >= 666666 },
 ];
