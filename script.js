@@ -38,7 +38,7 @@ const rateText = document.querySelector(".rate_text");
 const cookieContainer = document.querySelector(".cookie_container");
 const rebirthButton = document.getElementById("rebirth_button");
 
-let cookieCount = 0;
+let cookieCount = 1000000000;
 let cookiesPerSecond = 0;
 let clickMultiplier = 1;
 let totalClicks = 0;
@@ -225,7 +225,13 @@ function updateUpgradeVisibility() {
         const el = document.getElementById("upgrade_" + upgrade.name);
         if (!el) continue;
         const threshold = unlockAt[upgrade.name] ?? 0;
+
+        // Once unlocked, always unlocked
         if (cookieCount >= threshold || upgrade.count > 0) {
+            permanentlyUnlocked.add(upgrade.name);
+        }
+
+        if (permanentlyUnlocked.has(upgrade.name)) {
             el.classList.remove("upgrade_locked");
         } else {
             el.classList.add("upgrade_locked");
@@ -243,6 +249,18 @@ function updateCoinUploadVisibility() {
     } else {
         label.classList.add("coin_upload_locked");
         if (hint) hint.style.display = "inline";
+    }
+}
+
+function updateRebirthUpgradeButton() {
+    const btn = document.getElementById("rebirth_upgrade_button");
+    if (!btn) return;
+    if (rebirths >= 1) {
+        btn.classList.remove("nav_btn_locked");
+        btn.disabled = false;
+    } else {
+        btn.classList.add("nav_btn_locked");
+        btn.disabled = true;
     }
 }
 
@@ -283,6 +301,8 @@ function resetUpgradeElements() {
         el.querySelector(".upgrade_price").textContent = upgrade.price + "$";
     }
 }
+
+permanentlyUnlocked.clear();
 
 function clearUpgradeVisuals() {
     cookieContainer.querySelectorAll(".orbit_hand").forEach(hand => hand.remove());
@@ -537,16 +557,30 @@ function addHandAroundCookie() {
     cookieContainer.appendChild(hand);
 }
 
+const farmBackgrounds = {
+    flower:  "res/field.png",
+    kid:     "res/field.png",
+    garden:  "res/field.png",
+    factory: "res/field.png",
+};
+
 function addFarmImage(upgrade) {
     if (upgrade.name === "clicker" || upgrade.name === "gym") return;
     const farmsSection = document.getElementById("farms_section");
     let panel = document.getElementById("farm_panel_" + upgrade.name);
+
     if (!panel) {
         panel = document.createElement("div");
         panel.classList.add("farm_panel");
         panel.id = "farm_panel_" + upgrade.name;
+
+        // Set custom background per upgrade
+        const bg = farmBackgrounds[upgrade.name];
+        if (bg) panel.style.backgroundImage = `url("${bg}")`;
+
         farmsSection.appendChild(panel);
     }
+
     const img = document.createElement("img");
     img.src = upgrade.iconUrl;
     img.classList.add("farm_img");
@@ -885,3 +919,31 @@ viewport.addEventListener("mousemove", (e) => {
     mapEl.style.left = (originX + (e.clientX - startX)) + "px";
     mapEl.style.top = (originY + (e.clientY - startY)) + "px";
 });
+
+// ─── TUTORIAL ───
+let tutorialStep = 0;
+const TUTORIAL_KEY = "siwatko_tutorial_done";
+
+function nextTutorialStep() {
+    const current = document.getElementById("tutorial_step_" + tutorialStep);
+    if (current) current.classList.add("hidden");
+    tutorialStep++;
+    const next = document.getElementById("tutorial_step_" + tutorialStep);
+    if (next) next.classList.remove("hidden");
+}
+
+function closeTutorial() {
+    const overlay = document.getElementById("tutorial_overlay");
+    if (overlay) {
+        overlay.classList.add("tutorial_fade_out");
+        setTimeout(() => overlay.remove(), 400);
+    }
+    localStorage.setItem(TUTORIAL_KEY, "done");
+}
+
+// Only show tutorial on first visit
+if (!localStorage.getItem(TUTORIAL_KEY)) {
+    document.getElementById("tutorial_overlay").style.display = "flex";
+} else {
+    document.getElementById("tutorial_overlay").remove();
+}

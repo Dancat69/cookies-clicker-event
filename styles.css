@@ -443,10 +443,10 @@ nav > .rebirth_container > button:ACTIVE { background-color: #e6ac01; }
     position: absolute;
     bottom: 0;
     left: 0;
-    font-size: 10px;
+    font-size: 15px;
     font-weight: 700;
     background: rgba(0,0,0,0.55);
-    color: #F8CD47;
+    color: #29a510;
     padding: 1px 4px;
     border-radius: 0 4px 0 0;
 }
@@ -753,4 +753,108 @@ nav > .rebirth_container > button:ACTIVE { background-color: #e6ac01; }
 
 .coin_upload_locked ~ .coin_upload_hint {
     display: inline;
+}
+
+#rebirth_upgrade_button.nav_btn_locked {
+    opacity: 0.35;
+    filter: grayscale(100%);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Nav button tooltips */
+nav button[title] {
+    position: relative;
+}
+
+nav button[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    top: 48px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 9999;
+    border: 1px solid #F8CD47;
+    pointer-events: none;
+    font-weight: 500;
+}
+
+.tutorial_overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.75);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+}
+
+.tutorial_box {
+    background: #1a1a1a;
+    border: 2px solid #F8CD47;
+    border-radius: 16px;
+    padding: 36px 40px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    color: white;
+    box-shadow: 0 0 40px rgba(248, 205, 71, 0.3);
+}
+
+.tutorial_icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.tutorial_box h2 {
+    font-size: 22px;
+    color: #F8CD47;
+    margin: 0 0 12px 0;
+}
+
+.tutorial_box p {
+    font-size: 14px;
+    color: #ccc;
+    line-height: 1.6;
+    margin: 0 0 24px 0;
+}
+
+.tutorial_box p strong {
+    color: white;
+}
+
+.tutorial_next {
+    background: #F8CD47;
+    color: #111;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.tutorial_next:hover {
+    background: #ffe680;
+}
+
+.tutorial_step.hidden {
+    display: none;
+}
+
+.tutorial_fade_out {
+    animation: tutorial_fade 0.4s ease forwards;
+}
+
+@keyframes tutorial_fade {
+    from { opacity: 1; }
+    to   { opacity: 0; }
 }
