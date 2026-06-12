@@ -559,7 +559,7 @@ function addHandAroundCookie() {
 
 const farmBackgrounds = {
     flower:  "res/field.png",
-    kid:     "res/school.png",
+    kid:     "res/shool.png",
     garden:  "res/street.png",
     factory: "res/field.png",
 };
@@ -790,6 +790,8 @@ coinUploadInput.addEventListener("change", () => {
     reader.onload = (e) => {
         const dataUrl = e.target.result;
         applyCoinFace(dataUrl);
+        // Wait for the new image to load before it appears in the rain
+        rainImage.onload = () => {};   // clear fallback guard
         rainImage.src = dataUrl;
         try { localStorage.setItem(COIN_FACE_KEY, dataUrl); }
         catch (err) { console.warn("Could not save coin face:", err); }
@@ -801,7 +803,10 @@ coinUploadInput.addEventListener("change", () => {
 coinResetButton.addEventListener("click", resetCoinFace);
 
 const savedCoinFace = localStorage.getItem(COIN_FACE_KEY);
-if (savedCoinFace) applyCoinFace(savedCoinFace);
+if (savedCoinFace) {
+    applyCoinFace(savedCoinFace);
+    rainImage.src = savedCoinFace; // ← add this line
+}
 
 updateUI();
 
